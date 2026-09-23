@@ -92,7 +92,7 @@ nav.main{display:flex;gap:34px;margin-left:auto;margin-right:38px}nav.main a{fon
 .window:hover .track,.window.paused .track{animation-play-state:paused}.logo{width:122px;height:68px;display:grid;place-items:center}.logo img{max-width:122px;max-height:56px;object-fit:contain;opacity:.7}.logo:hover img{opacity:1}
 section.block{padding:100px 0 94px}.head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;margin-bottom:42px}
 h2.big{font-size:clamp(38px,4.3vw,58px);font-weight:500;line-height:1.1;letter-spacing:-2.8px;margin-top:18px}.aside{font-size:13px;line-height:1.85;color:var(--muted);margin-bottom:4px}
-.grid-ft{display:grid;grid-template-columns:1.32fr 1fr;gap:32px 34px}.card{display:block;min-width:0}.card .shot{position:relative;overflow:hidden;background:#dce3dd;aspect-ratio:1.65}
+.grid-ft{display:grid;grid-template-columns:1.32fr 1fr;grid-auto-rows:min-content;gap:32px 34px}.card{display:flex;flex-direction:column;min-width:0}.card .shot{display:block;position:relative;overflow:hidden;background:#dce3dd;aspect-ratio:1.65}.card .caption{display:flex}
 .card.small .shot{aspect-ratio:1.55}.card img{width:100%;height:100%;object-fit:cover;filter:saturate(.76);transition:transform .7s,filter .7s}.card:hover img{transform:scale(1.03);filter:saturate(1)}
 .card.tall{grid-row:span 2;display:flex;flex-direction:column}.card.tall .shot{flex:1;min-height:400px;aspect-ratio:auto}
 .chips{position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;gap:10px}.chip{background:rgba(245,245,239,.95);padding:8px 10px;font:8px/1.4 var(--mono);letter-spacing:.8px}.chip.live{display:flex;gap:5px;align-items:center}.chip.live i{width:4px;height:4px;border-radius:50%;background:#139778}
@@ -179,10 +179,13 @@ const logoMark=(light)=>`<img src="${u(light?'assets/brand/logo-light.png':'asse
 
 const nav=[['Home','index.html'],['Our work','work/index.html'],['Expertise','expertise/index.html'],['About Gati','about/index.html'],['Careers','careers/index.html'],['Contact','contact/index.html']];
 
-function head({title,description,page}){
+const LIVE=process.env.LIVE_URL??'https://suryansh4567.github.io/gati-site';
+function head({title,description,slug='',page}){
+ const path=slug?`/${slug}/`:'/';
  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}</title><meta name="description" content="${description}"><meta name="robots" content="noindex,follow">
 <meta property="og:title" content="${title}"><meta property="og:description" content="${description}"><meta property="og:type" content="website">
+<link rel="canonical" href="${LIVE}${path}"><meta property="og:url" content="${LIVE}${path}"><meta property="og:image" content="${LIVE}/assets/images/conscient.webp"><meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#1c2a36">
 <link rel="icon" href="${u('assets/brand/favicon.svg')}"><link rel="stylesheet" href="${u('assets/site.css')}">
 <script defer src="${u('assets/site.js')}"></script></head><body data-page="${page}">
 <div class="utility"><div class="container"><span>RCC &amp; CIVIL CONSTRUCTION · ${P.region.toUpperCase()}</span><a href="tel:${tels}">${P.primary}${icons.arrow}</a></div></div>
@@ -218,7 +221,7 @@ For builders and developers across ${P.region}.</p>
 <div class="hero-actions"><a class="btn" href="${u('work/index.html')}">Explore our work ${icons.arrow}</a><a class="btn wa" href="${wa('Hello Gati, I would like to discuss a construction project.')}" target="_blank" rel="noopener">WhatsApp ${icons.whatsapp}</a></div>
 <div class="signoff"><span class="cross"></span><div><span class="mono">FROM FOUNDATION TO TOP SLAB</span><p>The structure. The people. The follow-through.</p></div></div>
 </div><div>
-<div class="frame main-frame"><img class="shot-main" src="${u('assets/images/site-1.webp')}" alt="Construction site photograph from the Gati gallery" width="1600" height="900"><span class="frame-tag"><i></i>ENGINEERED ON PAPER. BUILT ON SITE.</span></div>
+<div class="frame main-frame"><img class="shot-main" src="${u('assets/images/site-1.webp')}" alt="Construction site photograph from the Gati gallery" width="1600" height="900" fetchpriority="high" decoding="async"><span class="frame-tag"><i></i>ENGINEERED ON PAPER. BUILT ON SITE.</span></div>
 <div class="gallery-bar"><div><span class="mono main-label">RCC REINFORCEMENT / ON SITE</span><p class="main-text">The details carry the bigger picture.</p></div>
 <div class="controls"><span class="mono"><b class="counter">01</b><i>/ 04</i></span><button class="prev" aria-label="Previous photograph">${icons.left}</button><button class="next" aria-label="Next photograph">${icons.right}</button></div></div>
 </div></section>
@@ -374,7 +377,7 @@ const boot=`<script>var BASE=${JSON.stringify(BASE+'/')};var STEPS=${stepsJson};
 function page({title,description,slug,body}){
  const dir=slug?join(OUT,slug):OUT;
  mkdirSync(dir,{recursive:true});
- const html=head({title,description,page:slug.split('/')[0]||'index'})+body+footer;
+ const html=head({title,description,slug,page:slug.split('/')[0]||'index'})+body+footer;
  writeFileSync(join(dir,'index.html'),html.replace('</body></html>',boot+'</body></html>'));
 }
 
