@@ -1,0 +1,31 @@
+<svg width="900" height="260" viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GATI Infra Project Buildcon Pvt Ltd">
+  <defs>
+    <linearGradient id="gC" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1FA2FF"/>
+      <stop offset="1" stop-color="#12D8B0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Mark: rounded-square badge with forward momentum chevrons -->
+  <g transform="translate(40,40)">
+    <rect x="0" y="0" width="180" height="180" rx="40" fill="#1C2A36"/>
+    <!-- three forward chevrons, fading = speed trail -->
+    <g stroke="url(#gC)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <polyline points="52,52 96,90 52,128"/>
+      <polyline points="96,52 140,90 96,128" opacity="0.55"/>
+    </g>
+    <circle cx="150" cy="150" r="9" fill="#12D8B0"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(258,0)">
+    <text x="0" y="122" font-family="'Trebuchet MS', Arial, sans-serif" font-size="94" font-weight="800" letter-spacing="3" fill="#1C2A36">GATI</text>
+    <text x="0" y="122" font-family="'Trebuchet MS', Arial, sans-serif" font-size="94" font-weight="800" letter-spacing="3" fill="url(#gC)" opacity="0"/>
+    <g font-family="'Trebuchet MS', Arial, sans-serif">
+      <rect x="2" y="146" width="46" height="6" rx="3" fill="#1FA2FF"/>
+      <rect x="54" y="146" width="46" height="6" rx="3" fill="#12D8B0"/>
+      <text x="2" y="184" font-size="21" font-weight="700" letter-spacing="4" fill="#33414F">INFRA &#183; PROJECT &#183; BUILDCON</text>
+      <text x="2" y="210" font-size="15" font-weight="600" letter-spacing="9" fill="#8A97A4">PRIVATE LIMITED</text>
+    </g>
+  </g>
+</svg>
