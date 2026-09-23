@@ -12,15 +12,21 @@ var ICONS={pause:'<svg width="11" height="11" viewBox="0 0 24 24" fill="currentC
  var motion=document.querySelector('.motion'),track=document.querySelector('.track');
  if(motion&&track){motion.addEventListener('click',function(){var paused=track.parentElement.classList.toggle('paused');motion.setAttribute('aria-pressed',paused?'true':'false');motion.querySelector('span').textContent=paused?'Play motion':'Pause motion';motion.firstElementChild.outerHTML=paused?ICONS.play:ICONS.pause;});}
  var burger=document.querySelector('.burger'),mobile=document.getElementById('mobile-nav');
- if(burger&&mobile){burger.addEventListener('click',function(){var open=mobile.hasAttribute('hidden');if(open)mobile.removeAttribute('hidden');else mobile.setAttribute('hidden','');burger.setAttribute('aria-expanded',open?'true':'false');burger.setAttribute('aria-label',open?'Close menu':'Open menu');if(open){var first=mobile.querySelector('a');if(first)first.focus();}});}
- if(window.requestIdleCallback&&frames.length){window.requestIdleCallback(function(){frames.forEach(function(f){var im=new Image();im.src=BASE+f.src;});});}
+ if(burger&&mobile){
+  var openMenu=function(){mobile.removeAttribute('hidden');burger.setAttribute('aria-expanded','true');burger.setAttribute('aria-label','Close menu');var first=mobile.querySelector('a');if(first)first.focus();};
+  var closeMenu=function(){mobile.setAttribute('hidden','');burger.setAttribute('aria-expanded','false');burger.setAttribute('aria-label','Open menu');};
+  burger.addEventListener('click',function(){if(mobile.hasAttribute('hidden'))openMenu();else{closeMenu();burger.focus();}});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!mobile.hasAttribute('hidden')){closeMenu();burger.focus();}});
+  window.addEventListener('resize',function(){if(window.innerWidth>=861&&!mobile.hasAttribute('hidden'))closeMenu();});
+ }
+ if(window.requestIdleCallback&&frames.length&&document.querySelector('.main-frame')){window.requestIdleCallback(function(){frames.forEach(function(f){var im=new Image();im.src=BASE+f.src;});});}
  var buttons=[].slice.call(document.querySelectorAll('.tabs button'));
  if(buttons.length){var head=document.querySelector('.step h3'),body=document.querySelector('.step p');
   buttons.forEach(function(b){b.addEventListener('click',function(){buttons.forEach(function(x){x.setAttribute('aria-pressed','false');});b.setAttribute('aria-pressed','true');var step=STEPS[Number(b.dataset.step)];head.textContent=step.title;body.textContent=step.body;});});}
  var acc=document.querySelectorAll('.acc details');
  [].forEach.call(acc,function(d){d.addEventListener('toggle',function(){var mark=d.querySelector('.mark');if(!mark)return;mark.textContent=d.open?'−':'+';});});
  var filterButtons=[].slice.call(document.querySelectorAll('.filters button')),search=document.querySelector('.search input'),cards=[].slice.call(document.querySelectorAll('#project-grid .card')),active='All work';
- function apply(){var q=(search&&search.value||'').toLowerCase();var shown=0;
+ function apply(){var q=(search&&search.value||'').toLowerCase().trim();var shown=0;
   cards.forEach(function(card){var data=CARDS[card.getAttribute('href')];var matchFilter=active==='All work'||data.category===active||data.status===active;var matchText=!q||(data.text||'').indexOf(q)>-1;var visible=matchFilter&&matchText;card.style.display=visible?'':'none';if(visible)shown++;});
   var empty=document.getElementById('no-results');if(shown===0&&!empty&&cards.length){var p=document.createElement('p');p.id='no-results';p.className='credit';p.textContent='No projects match that search. Try another place, or reset the filters.';document.getElementById('project-grid').after(p);}else if(shown>0&&empty)empty.remove();}
  filterButtons.forEach(function(b){b.addEventListener('click',function(){active=b.dataset.filter;filterButtons.forEach(function(x){x.setAttribute('aria-pressed','false');});b.setAttribute('aria-pressed','true');apply();});});

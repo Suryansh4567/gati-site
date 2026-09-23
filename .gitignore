@@ -1,2 +1,4 @@
 preview/
 build/
+node_modules/
+.npm/

@@ -37,6 +37,22 @@ is uploaded to or stored by this website, so there is never a false
 BASE_PATH=/gati-site node SOURCE-build.mjs   # writes into build/
 ```
 
+## Testing
+
+```bash
+npm install
+BASE_PATH= OUT_DIR=preview node SOURCE-build.mjs
+python3 -m http.server 8080 --directory preview &
+npm test            # jsdom suite in test/site.test.mjs
+```
+
+The suite covers mobile-nav disclosure behaviour (open/close/rapid clicks/Escape/
+focus return/resize), work filters + search (case, padding, empty state, injection),
+process tabs, gallery wrap + marquee pause, gallery-prefetch scoping, skip-link
+targets on every page and console cleanliness on all pages. It does NOT verify
+layout, real-browser rendering, screen-reader announcements, zoom behaviour or
+host-specific 404 delivery — those remain manual/host checks.
+
 All text, phone numbers, projects, services and job roles live at the top of
 `SOURCE-build.mjs` as plain objects. Fonts (Manrope, IBM Plex Mono) are self-hosted
 under the SIL Open Font License.
