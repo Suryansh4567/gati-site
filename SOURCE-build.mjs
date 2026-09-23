@@ -67,8 +67,8 @@ a{color:inherit;text-decoration:none}button{font:inherit;color:inherit;backgroun
 a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid #04856e;outline-offset:4px}::selection{background:var(--accent)}
 .container{width:min(1280px,calc(100% - 96px));margin:0 auto}.mono{font:10px/1.6 var(--mono);letter-spacing:1.2px}
 .eyebrow{font:10px/1.6 var(--mono);letter-spacing:1.25px;text-transform:uppercase;display:flex;align-items:center;gap:12px;color:#55645d}.eyebrow i{display:block;width:21px;height:2px;background:var(--accent)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:26px;min-height:52px;padding:16px 22px;background:var(--ink);color:var(--paper);border:1px solid var(--ink);font-size:13px;font-weight:600;transition:background .2s}
-.btn:hover{background:#2f4a48}.btn.wa{background:#128c5a;border-color:#128c5a;color:#fff}.btn.wa:hover{background:#0f7549}.btn.small{min-height:43px;padding:12px 17px;font-size:11px;gap:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:28px;min-height:60px;padding:18px 30px;background:var(--ink);color:var(--paper);border:1px solid var(--ink);font-size:15px;font-weight:600;transition:background .2s}
+.btn:hover{background:#2f4a48}.btn.wa{background:#128c5a;border-color:#128c5a;color:#fff}.btn.wa:hover{background:#0f7549}.btn.small{min-height:48px;padding:13px 22px;font-size:13px;gap:18px}
 .btn svg{transition:transform .2s}.btn:hover svg{transform:translate(2px,-2px)}
 .text-link{display:inline-flex;align-items:center;gap:20px;justify-content:space-between;font-size:13px;font-weight:600;padding:6px 0;border-bottom:1px solid #7b8b83}
 .text-link svg{transition:transform .2s}.text-link:hover svg{transform:translate(2px,-2px)}.text-link.light{color:var(--paper);border-color:#5c7173}
