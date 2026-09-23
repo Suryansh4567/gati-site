@@ -1,7 +1,20 @@
 // Builds the static Gati website. No server, database, login or on-site form.
 // Contact flow: WhatsApp / Call / Email only.
-import {mkdirSync,writeFileSync,copyFileSync,readdirSync,statSync} from 'node:fs';
-import {join,dirname} from 'node:path';
+//
+// Desktop / PC pass (this revision):
+//  1. Gallery + founder images were ~2.6x the size they are ever displayed at.
+//     They are pre-resized to 2x their widest rendered box, and two unreferenced
+//     gallery images (site-4, site-8) were removed. Build no longer ships them.
+//  2. Every image below the first screen is now lazy; only the hero, the logo
+//     and the client marquee stay eager. (The marquee is transform-animated —
+//     lazy loading there leaves gaps, so it is deliberately kept eager.)
+//  3. Real social preview: purpose-built 1200x630 JPEG instead of the .webp
+//     below-the-fold first project shot (WhatsApp/LinkedIn do not render webp).
+//  4. Fonts are preloaded, so desktop text stops swapping after first paint.
+//  5. Project-page hero image gets fetchpriority=high + correct dimensions.
+//  6. Width/height on every image now match the real file (no layout shift).
+import {mkdirSync,writeFileSync,copyFileSync,readdirSync,statSync,unlinkSync,existsSync} from 'node:fs';
+import {join,dirname,resolve} from 'node:path';
 
 const BASE=process.env.BASE_PATH??'/gati-site';
 const OUT=process.env.OUT_DIR??'build';
@@ -46,6 +59,19 @@ const steps=[
  {label:'HAND OVER',title:'Finish with a walkthrough.',body:'Review the completed scope together and close the loop on the details before handover.'}
 ];
 const gallery=Array.from({length:8},(_,i)=>`site-${i+1}`);
+// Only these image files are ever referenced by a page. Anything else in
+// assets/images is a working file and is not published.
+const USED_IMAGES=[...new Set([
+ ...services.map(s=>s.image),
+ ...projects.map(p=>p.image),
+ ...founders.map(f=>f.image),
+ ...['site-1','site-2','site-3','site-5','site-6','site-7']
+])].map(n=>n+'.webp');
+// Real pixel size of each published image. Keeping these in step with the files
+// means the browser reserves the right box before the bytes arrive (no shift).
+const SERVICE_DIM={'site-3':[1240,572],'site-7':[1240,572],'site-2':[1240,572],'parq':[800,323]};
+const FOUNDER_DIM={'parveen-saini':[810,540],'udaybhan-malik':[810,608],'amit-deshwal':[810,810]};
+const PROJECT_DIM={'conscient':[1280,720],'crc':[800,450],'parq':[800,323],'downtown':[322,156],'prestige':[600,350],'bl-kashyap':[409,285]};
 const roles=[
  {title:'Shuttering Carpenter',type:'Full-time · On site',body:'Work with the RCC execution team on residential and commercial sites. Prepare and install formwork, and coordinate with reinforcement and site teams.',requirements:['Relevant shuttering and formwork experience','Ability to work from site instructions and drawings','Attention to alignment, finishing and site safety']},
  {title:'Bar Bender / Fitter',type:'Full-time · On site',body:'Support reinforcement work on active project sites. Read drawings, prepare steel and work closely with the structural execution team.',requirements:['Experience in bar bending and reinforcement','Ability to read basic structural drawings','A careful, collaborative approach to site work']},
@@ -188,8 +214,10 @@ function head({title,description,slug='',page}){
  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}</title><meta name="description" content="${description}"><meta name="robots" content="noindex,follow">
 <meta property="og:title" content="${title}"><meta property="og:description" content="${description}"><meta property="og:type" content="website">
-<link rel="canonical" href="${LIVE}${path}"><meta property="og:url" content="${LIVE}${path}"><meta property="og:image" content="${LIVE}/assets/images/conscient.webp"><meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#1c2a36">
-<link rel="icon" href="${u('assets/brand/favicon.svg')}"><link rel="stylesheet" href="${u('assets/site.css')}">
+<link rel="canonical" href="${LIVE}${path}"><meta property="og:url" content="${LIVE}${path}"><meta property="og:image" content="${LIVE}/assets/brand/og-image.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Gati Infra Project Buildcon — RCC and civil construction, Delhi NCR &amp; Haryana"><meta property="og:site_name" content="Gati Infra Project Buildcon"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${LIVE}/assets/brand/og-image.jpg"><meta name="theme-color" content="#1c2a36">
+<link rel="icon" href="${u('assets/brand/favicon.svg')}"><link rel="icon" href="${u('assets/brand/favicon-192.png')}" sizes="192x192" type="image/png"><link rel="apple-touch-icon" href="${u('assets/brand/favicon-192.png')}">
+<link rel="preload" href="${u('assets/fonts/Manrope.woff2')}" as="font" type="font/woff2" crossorigin><link rel="preload" href="${u('assets/fonts/IBMPlexMono.woff2')}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="${u('assets/site.css')}">
 <script defer src="${u('assets/site.js')}"></script></head><body data-page="${page}">
 <div class="utility"><div class="container"><span>RCC &amp; CIVIL CONSTRUCTION · ${P.region.toUpperCase()}</span><a href="tel:${tels}">${P.primary}${icons.arrow}</a></div></div>
 <header class="site"><div class="container head"><a href="${u('index.html')}" aria-label="Gati home">${logoMark(false)}</a>
@@ -207,7 +235,7 @@ const footer=`<footer class="site"><div class="container"><div class="f-top">
 </body></html>`;
 const projectCard=(p)=>{
  const href=u('work/'+p.slug+'/index.html');
- return `<a class="card${p.tall?' tall':''}" href="${href}"><span class="shot"><img src="${u('assets/images/'+p.image+'.webp')}" alt="${p.title}, ${p.location}" loading="lazy" width="1200" height="800">
+ return `<a class="card${p.tall?' tall':''}" href="${href}"><span class="shot"><img src="${u('assets/images/'+p.image+'.webp')}" alt="${p.title}, ${p.location}" loading="lazy" decoding="async" width="${PROJECT_DIM[p.image][0]}" height="${PROJECT_DIM[p.image][1]}">
  <span class="chips"><span class="chip">${p.category.toUpperCase()}</span><span class="chip live"><i></i>${p.status.toUpperCase()}</span></span>
  <span class="kind">${p.visual?'PROJECT VISUAL':'PROJECT PHOTO'}</span><span class="arrow">${icons.big}</span></span>
  <span class="caption"><span><h3>${p.title}</h3><p>${p.location}<span>/</span>${p.scope}</p></span>${icons.arrow}</span></a>`;
@@ -224,7 +252,7 @@ For builders and developers across ${P.region}.</p>
 <div class="hero-actions"><a class="btn" href="${u('work/index.html')}">Explore our work ${icons.arrow}</a><a class="btn wa" href="${wa('Hello Gati, I would like to discuss a construction project.')}" target="_blank" rel="noopener">WhatsApp ${icons.whatsapp}</a></div>
 <div class="signoff"><span class="cross"></span><div><span class="mono">FROM FOUNDATION TO TOP SLAB</span><p>The structure. The people. The follow-through.</p></div></div>
 </div><div>
-<div class="frame main-frame"><img class="shot-main" src="${u('assets/images/site-1.webp')}" alt="Construction site photograph from the Gati gallery" width="1600" height="900" fetchpriority="high" decoding="async"><span class="frame-tag"><i></i>ENGINEERED ON PAPER. BUILT ON SITE.</span></div>
+<div class="frame main-frame"><img class="shot-main" src="${u('assets/images/site-1.webp')}" alt="Construction site photograph from the Gati gallery" width="1240" height="571" fetchpriority="high" decoding="async"><span class="frame-tag"><i></i>ENGINEERED ON PAPER. BUILT ON SITE.</span></div>
 <div class="gallery-bar"><div><span class="mono main-label">RCC REINFORCEMENT / ON SITE</span><p class="main-text">The details carry the bigger picture.</p></div>
 <div class="controls"><span class="mono"><b class="counter">01</b><i>/ 04</i></span><button class="prev" aria-label="Previous photograph">${icons.left}</button><button class="next" aria-label="Next photograph">${icons.right}</button></div></div>
 </div></section>
@@ -244,7 +272,7 @@ For builders and developers across ${P.region}.</p>
 <div class="tabs" role="group" aria-label="Process steps">${steps.map((s,i)=>`<button aria-pressed="${i===0}" data-step="${i}"><span class="num">0${i+1}</span><span class="lbl">${s.label}</span><span class="rule"><i></i></span></button>`).join('')}</div>
 <div class="step"><h3>${steps[0].title}</h3><p>${steps[0].body}</p>${icons.big}</div></section>
 
-<section class="container people"><div><img src="${u('assets/images/site-5.webp')}" alt="Members of the construction team from the Gati site gallery" loading="lazy" width="1600" height="900"><span class="mono">THE PEOPLE BEHIND THE PROGRESS</span></div>
+<section class="container people"><div><img src="${u('assets/images/site-5.webp')}" alt="Members of the construction team from the Gati site gallery" loading="lazy" decoding="async" width="1280" height="591"><span class="mono">THE PEOPLE BEHIND THE PROGRESS</span></div>
 <div><div class="eyebrow"><i></i>04 / THE GATI WAY</div><h2>Hands-on people.<br>Accountable work.</h2>
 <p>We are a construction company built around the people who actually do the work. Our founders stay close to the execution, our teams stay close to the drawings, and our focus stays on the project.</p>
 <p>No distant layers. Just people who know the site and understand their part in it.</p>
@@ -276,7 +304,7 @@ ${['All work','Residential','Commercial','Ongoing'].map((f,i)=>`<button aria-pre
 const expertise=`<main id="top">
 <section class="container intro"><div class="eyebrow"><i></i>OUR EXPERTISE</div><div class="row"><h1>The whole scope.<br>Handled with care.</h1><p>Specialist RCC execution at the core. Practical civil, renovation and residential capabilities around it.</p></div></section>
 <div class="container">${services.map(s=>`<section class="service" id="${s.id}"><div class="txt"><span class="mono num">${s.n} / OUR EXPERTISE</span><h2>${s.title}</h2><p>${s.body}</p><ul>${s.items.map(x=>`<li><span>↗</span>${x}</li>`).join('')}</ul><a class="text-link" href="${wa(`Hello Gati, I need help with ${s.title.toLowerCase()}.`)}" target="_blank" rel="noopener">Ask about this on WhatsApp ${icons.arrow}</a></div>
-<figure><img src="${u('assets/images/'+s.image+'.webp')}" alt="${s.alt}" loading="lazy" width="1600" height="900"><figcaption>${s.id==='homes'?'<span>PROJECT VISUAL</span>':'<span>SITE PHOTOGRAPH</span>'} / ${s.short.toUpperCase()}</figcaption></figure></section>`).join('')}</div>
+<figure><img src="${u('assets/images/'+s.image+'.webp')}" alt="${s.alt}" loading="lazy" decoding="async" width="${SERVICE_DIM[s.image][0]}" height="${SERVICE_DIM[s.image][1]}"><figcaption>${s.id==='homes'?'<span>PROJECT VISUAL</span>':'<span>SITE PHOTOGRAPH</span>'} / ${s.short.toUpperCase()}</figcaption></figure></section>`).join('')}</div>
 <section class="cta"><div class="container"><div class="eyebrow"><i></i>SHARE THE REQUIREMENT</div><div class="row"><h2>Send the scope.<br>We’ll take it from there.</h2></div>
 <div class="buttons"><a class="btn wa" href="${wa('Hello Gati, here is my project scope:')}" target="_blank" rel="noopener">WhatsApp the details ${icons.whatsapp}</a><a class="btn ghost" href="mailto:${P.email}?subject=Project%20enquiry">Email us</a></div></div></section>
 </main>`;
@@ -284,10 +312,10 @@ const expertise=`<main id="top">
 // About
 const about=`<main id="top">
 <section class="container intro"><div class="eyebrow"><i></i>GATI INFRA PROJECT BUILDCON</div><div class="row"><h1>A hands-on<br>kind of company.</h1><p>Close to the site. Close to the team. Focused on the work that needs to get done.</p></div></section>
-<section class="container about-img"><img width="1600" height="738" loading="lazy" src="${u('assets/images/site-6.webp')}" alt="RCC construction site and execution teams"><span class="mono">ON-SITE EXECUTION / GATI SITE GALLERY</span></section>
+<section class="container about-img"><img width="1600" height="738" loading="lazy" decoding="async" src="${u('assets/images/site-6.webp')}" alt="RCC construction site and execution teams"><span class="mono">ON-SITE EXECUTION / GATI SITE GALLERY</span></section>
 <section class="container story"><div><div class="eyebrow"><i></i>OUR STARTING POINT</div></div><div><h2>Honest work is<br>a good foundation.</h2>${aboutCopy.map(p=>`<p>${p}</p>`).join('')}</div></section>
 <section class="founders"><div class="container"><div class="head-row"><div><div class="eyebrow"><i></i>THE PEOPLE LEADING THE WORK</div><h2 class="big">Founders.<br>Still hands-on.</h2></div><p class="aside">Three founding partners.<br>A shared responsibility to the work.</p></div>
-<div class="f-grid">${founders.map(f=>`<article><div class="ph"><img src="${u('assets/images/'+f.image+'.webp')}" alt="${f.name}" loading="lazy" width="800" height="1000"></div><h3>${f.name}</h3><span class="mono">FOUNDER &amp; DIRECTOR</span><p>${f.text}</p></article>`).join('')}</div></div></section>
+<div class="f-grid">${founders.map(f=>`<article><div class="ph"><img src="${u('assets/images/'+f.image+'.webp')}" alt="${f.name}" loading="lazy" decoding="async" width="${FOUNDER_DIM[f.image][0]}" height="${FOUNDER_DIM[f.image][1]}"></div><h3>${f.name}</h3><span class="mono">FOUNDER &amp; DIRECTOR</span><p>${f.text}</p></article>`).join('')}</div></div></section>
 <section class="container join"><div><div class="eyebrow"><i></i>GOOD WORK NEEDS GOOD PEOPLE</div><h2>Bring your skill<br>to the next site.</h2></div><a class="btn" href="${u('careers/index.html')}">Explore open roles ${icons.arrow}</a></section>
 <section class="cta"><div class="container"><div class="eyebrow"><i></i>WORK WITH GATI</div><div class="row"><h2>Start with<br>a conversation.</h2></div>
 <div class="buttons"><a class="btn wa" href="${wa('Hello Gati, I would like to work with you.')}" target="_blank" rel="noopener">WhatsApp ${icons.whatsapp}</a><a class="btn ghost" href="tel:${tels}">Call ${P.primary}</a></div></div></section>
@@ -397,7 +425,7 @@ for(const p of projects){
  const body=`<main id="top"><section class="container intro"><a class="text-link" href="${u('work/index.html')}" style="margin-bottom:30px">← All projects</a>
  <div class="eyebrow"><i></i>${p.category.toUpperCase()} / ${p.status.toUpperCase()}</div>
  <div class="row"><h1>${p.title}</h1><p>${p.location}<br>${p.scope}</p></div></section>
- <div class="container"><img src="${u('assets/images/'+p.image+'.webp')}" alt="${p.title}, ${p.location}" width="1600" height="900" style="width:100%;max-height:620px;object-fit:cover;object-position:center 30%">
+ <div class="container"><img src="${u('assets/images/'+p.image+'.webp')}" alt="${p.title}, ${p.location}" width="${PROJECT_DIM[p.image][0]}" height="${PROJECT_DIM[p.image][1]}" fetchpriority="high" decoding="async" style="width:100%;max-height:620px;object-fit:cover;object-position:center 30%">
  <p class="credit">${p.visual?'PROJECT VISUAL':'PROJECT PHOTO'} / COMPANY PORTFOLIO</p></div>
  <section class="container story"><div><div class="eyebrow"><i></i>THE WORK IN CONTEXT</div></div><div><h2>A considered part<br>of the bigger picture.</h2>${p.body.map(x=>`<p>${x}</p>`).join('')}
  <div style="margin-top:26px"><a class="btn wa" href="${wa(`Hello Gati, I would like to discuss a project similar to ${p.title} (${p.location}).`)}" target="_blank" rel="noopener">Discuss a similar project ${icons.whatsapp}</a></div></div></section>
@@ -414,15 +442,20 @@ writeFileSync(join(OUT,'assets','brand','favicon.svg'),`<svg xmlns="http://www.w
 writeFileSync(join(OUT,'robots.txt'),'User-agent: *\nDisallow: /\n');
 writeFileSync(join(OUT,'.nojekyll'),'');
 writeFileSync(join(OUT,'404.html'),head({title:'Page not found | Gati',description:'This page could not be found.',page:'404'})+`<main class="missing"><a href="${u('index.html')}">${logoMark(false)}</a><h1>Not every path<br>leads to a project.</h1><p>This page may have moved. Head back to solid ground.</p><a class="btn" href="${u('index.html')}">Back to the homepage ${icons.arrow}</a></main>`);
-for(const dir of ['images','partners','fonts','brand']){
+for(const dir of ['partners','fonts','brand']){
  mkdirSync(join(OUT,'assets',dir),{recursive:true});
  for(const file of readdirSync(join('assets',dir)))copyFileSync(join('assets',dir,file),join(OUT,'assets',dir,file));
 }
-// Copy every project image with the names the templates expect.
-for(const p of projects){
- if(!statSync(join('assets','images',p.image+'.webp'),{throwIfNoEntry:false}))throw new Error('Missing project image: '+p.image);
+// Publish only the images the templates actually reference, and prune anything
+// already sitting in the output that is no longer part of the build.
+mkdirSync(join(OUT,'assets','images'),{recursive:true});
+const missing=USED_IMAGES.filter(f=>!existsSync(join('assets','images',f)));
+if(missing.length)throw new Error('Missing image(s) referenced by the templates: '+missing.join(', '));
+for(const file of USED_IMAGES)copyFileSync(join('assets','images',file),join(OUT,'assets','images',file));
+for(const file of readdirSync(join(OUT,'assets','images'))){
+ if(!USED_IMAGES.includes(file))unlinkSync(join(OUT,'assets','images',file));
 }
-writeFileSync(join(OUT,'README.md'),`# Gati website — static frontend only\n\nNo server, database, login or on-site form. Every call to action opens WhatsApp, the phone dialler or an email app.\n\n## Pages\nHome, Our work, six project pages, Expertise, About, Careers, Contact and Privacy.\n\n## Editing content\nCompany details and phone numbers live at the top of \`build.mjs\` (\`P\`). Projects, services, careers and copy are plain objects in the same file. Run \`node build.mjs\` to rebuild into \`build/\`.\n\n## Hosting\nUpload the contents of \`build/\` to any static host. GitHub Pages needs no server; the asset paths use the \`BASE_PATH\` value from the build (default \`/gati-preview\`).\n\n## Not included\nNo enquiries, applications, resumes or personal data are collected or stored. Visitors continue the conversation in their own WhatsApp, phone or email app.\n\nCompany details, project scopes and imagery are supplied references, not independently verified claims. Client marks belong to their respective owners.\n`);
+if(resolve(OUT)!==resolve('.'))writeFileSync(join(OUT,'README.md'),`# Gati website — static frontend only\n\nNo server, database, login or on-site form. Every call to action opens WhatsApp, the phone dialler or an email app.\n\n## Pages\nHome, Our work, six project pages, Expertise, About, Careers, Contact and Privacy.\n\n## Editing content\nCompany details and phone numbers live at the top of \`build.mjs\` (\`P\`). Projects, services, careers and copy are plain objects in the same file. Run \`node build.mjs\` to rebuild into \`build/\`.\n\n## Hosting\nUpload the contents of \`build/\` to any static host. GitHub Pages needs no server; the asset paths use the \`BASE_PATH\` value from the build (default \`/gati-preview\`).\n\n## Not included\nNo enquiries, applications, resumes or personal data are collected or stored. Visitors continue the conversation in their own WhatsApp, phone or email app.\n\nCompany details, project scopes and imagery are supplied references, not independently verified claims. Client marks belong to their respective owners.\n`);
 console.log('Built static website into '+OUT+'/');
 console.log('Pages: home, work (+'+projects.length+' projects), expertise, about, careers, contact, privacy, 404');
 console.log('Contact actions: WhatsApp / call / email only');

@@ -47,6 +47,32 @@ Only static files. Upload the repository contents to any static host; the asset
 paths assume the site is served from `/gati-site/`, so change `BASE_PATH` if the
 path changes.
 
+## Images and weight
+
+Every photograph is stored at roughly twice the largest size it is ever displayed
+at: sharp on a retina laptop, without shipping pixels nothing renders.
+
+| Set | Stored at | Widest it renders |
+| --- | --- | --- |
+| Gallery and section photographs (`site-*`) | 1240 px | ~620 px |
+| Project cards and project-page heroes | native (409–1280 px) | 623–1280 px |
+| Founder portraits | 810 px | 405 px |
+| Client marks | native | 122 px |
+
+`SOURCE-build.mjs` publishes only the images the templates reference
+(`USED_IMAGES`) and deletes anything stale from the output directory; the build
+fails loudly if a referenced image is missing. Pixel sizes live in
+`SERVICE_DIM`, `FOUNDER_DIM` and `PROJECT_DIM` — update them when you swap a
+file, so the browser reserves the right space and nothing shifts while loading.
+
+The first-screen photograph is `fetchpriority="high"`, the two self-hosted fonts
+are preloaded, and everything below the first screen is `loading="lazy"` — except
+the client marquee, which is transform-animated and must stay eager.
+
+`assets/brand/og-image.jpg` (1200×630) is the card WhatsApp and LinkedIn show
+when the link is shared. The previous `.webp` preview did not render on those
+platforms at all.
+
 ## Notes
 
 - Company details, project scopes and imagery are supplied references, not
