@@ -1,17 +1,56 @@
-# Gati website — static frontend only
+# Gati — website (static frontend)
 
-No server, database, login or on-site form. Every call to action opens WhatsApp, the phone dialler or an email app.
+Live: https://suryansh4567.github.io/gati-site/
+
+A plain static website for **Gati Infra Project Buildcon Pvt Ltd** — RCC and civil
+construction, Delhi NCR and Haryana.
+
+## No backend, by design
+
+There is no server, no database, no login, no admin panel, no cookie and no form.
+Every call to action opens the visitor's own app:
+
+- **WhatsApp** — `https://wa.me/919910144422?text=…` with a prepared message
+- **Call** — `tel:+919910144422` and `tel:+919729073771`
+- **Email** — `mailto:gatiinfraprojects.pvtltd@gmail.com`
+
+A CV or a drawing is attached by the person inside their own WhatsApp chat. Nothing
+is uploaded to or stored by this website, so there is never a false
+"submitted" message and no personal data to look after.
 
 ## Pages
-Home, Our work, six project pages, Expertise, About, Careers, Contact and Privacy.
 
-## Editing content
-Company details and phone numbers live at the top of `build.mjs` (`P`). Projects, services, careers and copy are plain objects in the same file. Run `node build.mjs` to rebuild into `build/`.
+| Path | Page |
+| --- | --- |
+| `/` | Home — hero, client motion band, selected work, scope, process, team, CTA |
+| `/work/` | Full portfolio with category filters and search |
+| `/work/<project>/` | Six project pages |
+| `/expertise/` | Four service lines |
+| `/about/` | Company, founders |
+| `/careers/` | Four open site roles, apply on WhatsApp |
+| `/contact/` | WhatsApp, both phone numbers, email, address, FAQs |
+| `/privacy/` | What is and is not collected (nothing is) |
+
+## Rebuilding
+
+```bash
+BASE_PATH=/gati-site node SOURCE-build.mjs   # writes into build/
+```
+
+All text, phone numbers, projects, services and job roles live at the top of
+`SOURCE-build.mjs` as plain objects. Fonts (Manrope, IBM Plex Mono) are self-hosted
+under the SIL Open Font License.
 
 ## Hosting
-Upload the contents of `build/` to any static host. GitHub Pages needs no server; the asset paths use the `BASE_PATH` value from the build (default `/gati-preview`).
 
-## Not included
-No enquiries, applications, resumes or personal data are collected or stored. Visitors continue the conversation in their own WhatsApp, phone or email app.
+Only static files. Upload the repository contents to any static host; the asset
+paths assume the site is served from `/gati-site/`, so change `BASE_PATH` if the
+path changes.
 
-Company details, project scopes and imagery are supplied references, not independently verified claims. Client marks belong to their respective owners.
+## Notes
+
+- Company details, project scopes and imagery are supplied references, not
+  independently verified claims.
+- Client marks belong to their respective owners.
+- The pages carry `noindex` so this build does not compete in search with the
+  company's existing site; remove that line in `SOURCE-build.mjs` to allow indexing.
